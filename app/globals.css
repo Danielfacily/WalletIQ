@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --green:  #34C759;
+    --red:    #FF3B30;
+    --blue:   #007AFF;
+    --orange: #FF9500;
+    --purple: #AF52DE;
+    --teal:   #5AC8FA;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { background: #f2f2f7; }
+}
+
+@layer components {
+  .card        { @apply bg-white rounded-apple shadow-card overflow-hidden; }
+  .card-pad    { @apply p-5; }
+  .btn-primary { @apply bg-brand text-white font-bold rounded-xl px-6 py-3 transition-opacity hover:opacity-90 active:opacity-75; }
+  .btn-ghost   { @apply bg-white border border-gray-200 text-ink font-semibold rounded-xl px-6 py-3 transition-all hover:bg-surface; }
+  .label-sm    { @apply text-xs font-bold text-muted uppercase tracking-widest; }
+  .mono        { font-family: 'DM Mono', 'Courier New', monospace; }
+}
+
+/* Live dot */
+.live-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #34C759;
+  animation: blink 1.5s infinite;
+}
+@keyframes blink {
+  0%,100% { opacity:1; box-shadow:0 0 5px #34C759; }
+  50%      { opacity:.15; box-shadow:none; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:#d1d5db; border-radius:2px; }
+
+/* Ring SVG smooth */
+circle { transition: stroke-dasharray .6s ease; }
+
+/* Fade-up animation */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.animate-fade-up { animation: fadeUp .28s ease both; }
