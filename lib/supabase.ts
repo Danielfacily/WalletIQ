@@ -1,24 +1,6 @@
-import { createBrowserClient, createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+// ⚠️  Este arquivo é mantido para compatibilidade com imports existentes.
+// Para novos arquivos, importe diretamente de:
+//   Client Components → lib/supabase-browser
+//   Server Components → lib/supabase-server
 
-// ── Browser client (use in Client Components) ────────
-export const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-// ── Server client (use in Server Components / Route Handlers) ────────
-export function createSupabaseServer() {
-  const cookieStore = cookies()
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name) { return cookieStore.get(name)?.value },
-        set(name, value, opts) { cookieStore.set({ name, value, ...opts }) },
-        remove(name, opts) { cookieStore.set({ name, value:'', ...opts }) },
-      },
-    }
-  )
-}
+export { createClient as createBrowserClient, supabase } from './supabase-browser'
