@@ -2,9 +2,8 @@ import { createSupabaseServer } from '@/lib/supabase'
 import { getPlanFeatures, type PlanKey } from '@/lib/stripe'
 import { NextResponse } from 'next/server'
 
-// ── Get user plan from DB ─────────────────────────────────
 export async function getUserPlan(): Promise<{ userId: string; plan: PlanKey; aiMsgsToday: number } | null> {
-  const supabase = createSupabaseServer()
+  const supabase = await createSupabaseServer()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
@@ -23,7 +22,6 @@ export async function getUserPlan(): Promise<{ userId: string; plan: PlanKey; ai
   }
 }
 
-// ── Guard: AI messages ────────────────────────────────────
 export async function guardAI() {
   const ctx = await getUserPlan()
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -42,10 +40,9 @@ export async function guardAI() {
     }, { status: 429 })
   }
 
-  return null // null = allowed
+  return null
 }
 
-// ── Guard: Banks ──────────────────────────────────────────
 export async function guardBanks(currentBanks: number) {
   const ctx = await getUserPlan()
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -67,17 +64,15 @@ export async function guardBanks(currentBanks: number) {
   return null
 }
 
-// ── Increment AI usage counter ────────────────────────────
 export async function incrementAIUsage(userId: string) {
-  const supabase = createSupabaseServer()
+  const supabase = await createSupabaseServer()
   await supabase.rpc('increment_ai_usage', { p_user_id: userId })
 }
 
-// ── Check feature access (for UI) ────────────────────────
 export function canAccess(plan: PlanKey, feature: 'pdfReports' | 'familyMembers' | 'historyMonths', value?: number): boolean {
   const f = getPlanFeatures(plan)
-  if (feature === 'pdfReports')     return f.pdfReports
-  if (feature === 'familyMembers')  return f.familyMembers > 0
-  if (feature === 'historyMonths')  return (value ?? 1) <= f.historyMonths
+  if (feature === 'pdfReports')    return f.pdfReports
+  if (feature === 'familyMembers') return f.familyMembers > 0
+  if (feature === 'historyMonths') return (value ?? 1) <= f.historyMonths
   return false
 }
