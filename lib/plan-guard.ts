@@ -1,4 +1,4 @@
-import { createSupabaseServer } from '@/lib/supabase'
+import { createSupabaseServer } from '@/lib/supabase-server'
 import { getPlanFeatures, type PlanKey } from '@/lib/stripe'
 import { NextResponse } from 'next/server'
 

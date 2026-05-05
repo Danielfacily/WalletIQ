@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServer } from '@/lib/supabase'
+import { createSupabaseServer } from '@/lib/supabase-server'
 import { guardAI, incrementAIUsage, getUserPlan } from '@/lib/plan-guard'
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
