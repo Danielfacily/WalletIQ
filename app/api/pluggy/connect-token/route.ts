@@ -8,7 +8,7 @@ export async function POST() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const pluggy = getPluggyClient()
+    const pluggy = await getPluggyClient()
     const { accessToken } = await pluggy.createConnectToken()
     return NextResponse.json({ connectToken: accessToken })
   } catch (e: any) {

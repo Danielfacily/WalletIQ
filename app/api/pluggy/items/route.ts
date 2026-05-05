@@ -36,7 +36,7 @@ export async function DELETE(req: NextRequest) {
   if (!item) return NextResponse.json({ error: 'Item não encontrado' }, { status: 404 })
 
   try {
-    const pluggy = getPluggyClient()
+    const pluggy = await getPluggyClient()
     await pluggy.deleteItem(itemId)
   } catch {
     // Continue even if Pluggy delete fails — clean up locally

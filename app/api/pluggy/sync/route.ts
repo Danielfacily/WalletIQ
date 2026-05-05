@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   if (!itemId) return NextResponse.json({ error: 'itemId obrigatório' }, { status: 400 })
 
   try {
-    const pluggy = getPluggyClient()
+    const pluggy = await getPluggyClient()
 
     // Fetch item details from Pluggy
     const item = await pluggy.fetchItem(itemId)
