@@ -12,6 +12,8 @@ export default function TransactionsClient({ userId, fixed, transactions }: { us
   const router  = useRouter()
   const [form, setForm] = useState({ name:'', type:'expense', category:'food', recurrence:'variable', amount:'', date:new Date().toISOString().slice(0,10) })
   const [saving, setSaving] = useState(false)
+  const [error,  setError]  = useState<string|null>(null)
+  const [success,setSuccess]= useState(false)
   const [tab, setTab]       = useState<'add'|'list'|'fixed'>('add')
 
   const cats = form.type==='income' ? CATS_INC : CATS_EXP
@@ -19,13 +21,33 @@ export default function TransactionsClient({ userId, fixed, transactions }: { us
   const save = async () => {
     if(!form.name||!form.amount) return
     setSaving(true)
-    if(form.recurrence==='fixed') {
-      await supabase.from('fixed_budgets').insert({ user_id:userId, type:form.type, name:form.name, category:form.category, amount:parseFloat(form.amount) })
-    } else {
-      await supabase.from('transactions').insert({ user_id:userId, type:form.type, category:form.category, name:form.name, amount:parseFloat(form.amount), date:form.date })
+    setError(null)
+    setSuccess(false)
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      setError('Sessão expirada. Faça login novamente.')
+      setSaving(false)
+      return
     }
+
+    let result
+    if(form.recurrence==='fixed') {
+      result = await supabase.from('fixed_budgets').insert({ user_id:userId, type:form.type, name:form.name, category:form.category, amount:parseFloat(form.amount) })
+    } else {
+      result = await supabase.from('transactions').insert({ user_id:userId, type:form.type, category:form.category, name:form.name, amount:parseFloat(form.amount), date:form.date })
+    }
+
+    if(result.error) {
+      setError(`Erro ao salvar: ${result.error.message}`)
+      setSaving(false)
+      return
+    }
+
     setSaving(false)
+    setSuccess(true)
     setForm(f=>({...f,name:'',amount:''}))
+    setTimeout(()=>setSuccess(false), 3000)
     router.refresh()
   }
 
@@ -72,6 +94,16 @@ export default function TransactionsClient({ userId, fixed, transactions }: { us
             {form.recurrence==='fixed'?'🔒 Será diluído no ticker por minuto durante o mês. Zera dia 1°.':'⚡ Distribuído nos minutos restantes do mês. Impacto imediato no ticker.'}
           </div>
 
+          {error&&(
+            <div className="mb-3 px-4 py-3 rounded-xl bg-red-50 text-red-600 text-sm font-medium border border-red-100">
+              ⚠️ {error}
+            </div>
+          )}
+          {success&&(
+            <div className="mb-3 px-4 py-3 rounded-xl bg-green-50 text-green-600 text-sm font-medium border border-green-100">
+              ✅ Lançamento salvo com sucesso!
+            </div>
+          )}
           <button onClick={save} disabled={saving||!form.name||!form.amount}
             className="w-full bg-brand text-white font-bold py-4 rounded-2xl text-base hover:opacity-90 disabled:opacity-40 transition-opacity">
             {saving?'Salvando...':'Registrar lançamento'}
