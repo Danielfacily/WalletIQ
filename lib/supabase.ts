@@ -1,6 +1,8 @@
-// ⚠️  Este arquivo é mantido para compatibilidade com imports existentes.
-// Para novos arquivos, importe diretamente de:
-//   Client Components → lib/supabase-browser
-//   Server Components → lib/supabase-server
 
-export { createClient as createBrowserClient, supabase } from './supabase-browser'
+
+import { createBrowserClient } from '@supabase/ssr'
+
+export const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
