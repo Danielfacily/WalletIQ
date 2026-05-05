@@ -22,33 +22,34 @@ const short = (addr: string) => `${addr.slice(0, 6)}…${addr.slice(-4)}`
 const ETH   = (v: number)    => `${Number(v).toFixed(4)} ETH`
 
 export default function MetaMaskConnect() {
-  const [wallets,    setWallets]    = useState<Wallet[]>([])
-  const [loading,    setLoading]    = useState(true)
-  const [connecting, setConnecting] = useState(false)
-  const [syncing,    setSyncing]    = useState<string | null>(null)
-  const [removing,   setRemoving]   = useState<string | null>(null)
-  const [error,      setError]      = useState<string | null>(null)
-  const [success,    setSuccess]    = useState<string | null>(null)
+  const [wallets,      setWallets]      = useState<Wallet[]>([])
+  const [loading,      setLoading]      = useState(true)
+  const [hasMetaMask,  setHasMetaMask]  = useState<boolean | null>(null)
+  const [connecting,   setConnecting]   = useState(false)
+  const [syncing,      setSyncing]      = useState<string | null>(null)
+  const [removing,     setRemoving]     = useState<string | null>(null)
+  const [error,        setError]        = useState<string | null>(null)
+  const [success,      setSuccess]      = useState<string | null>(null)
+
+  useEffect(() => {
+    setHasMetaMask(typeof window !== 'undefined' && !!window.ethereum?.isMetaMask)
+  }, [])
 
   const fetchWallets = useCallback(async () => {
-    const res  = await fetch('/api/metamask/wallets')
-    const json = await res.json()
-    setWallets(json.wallets ?? [])
+    try {
+      const res  = await fetch('/api/metamask/wallets')
+      const json = await res.json()
+      setWallets(json.wallets ?? [])
+    } catch { /* ignore */ }
     setLoading(false)
   }, [])
 
   useEffect(() => { fetchWallets() }, [fetchWallets])
 
   const connect = async () => {
-    setError(null)
-    setSuccess(null)
-    if (!window.ethereum?.isMetaMask) {
-      setError('MetaMask não encontrado. Instale a extensão em metamask.io')
-      return
-    }
-    setConnecting(true)
+    setError(null); setSuccess(null); setConnecting(true)
     try {
-      const accounts: string[] = await window.ethereum.request({ method: 'eth_requestAccounts' })
+      const accounts: string[] = await window.ethereum!.request({ method: 'eth_requestAccounts' })
       const address = accounts[0]
       if (!address) throw new Error('Nenhuma conta selecionada')
 
@@ -70,8 +71,7 @@ export default function MetaMaskConnect() {
   }
 
   const syncWallet = async (address: string) => {
-    setSyncing(address)
-    setError(null)
+    setSyncing(address); setError(null)
     try {
       const res  = await fetch('/api/metamask/sync', {
         method:  'POST',
@@ -105,15 +105,17 @@ export default function MetaMaskConnect() {
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
         <div>
           <div className="text-base font-bold text-ink">MetaMask</div>
-          <div className="text-xs text-muted mt-0.5">Conecte sua carteira Ethereum e importe transações</div>
+          <div className="text-xs text-muted mt-0.5">Conecte sua carteira Ethereum</div>
         </div>
-        <button
-          onClick={connect}
-          disabled={connecting}
-          className="px-4 py-2 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-opacity"
-        >
-          {connecting ? 'Conectando…' : '+ Conectar carteira'}
-        </button>
+        {hasMetaMask && (
+          <button
+            onClick={connect}
+            disabled={connecting}
+            className="px-4 py-2 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-opacity"
+          >
+            {connecting ? 'Conectando…' : '+ Conectar carteira'}
+          </button>
+        )}
       </div>
 
       {error && (
@@ -127,44 +129,88 @@ export default function MetaMaskConnect() {
         </div>
       )}
 
-      {loading ? (
-        <div className="px-5 py-6 text-sm text-muted text-center animate-pulse">Carregando…</div>
-      ) : wallets.length === 0 ? (
-        <div className="px-5 py-8 text-center">
-          <div className="text-3xl mb-2">🦊</div>
-          <div className="text-sm font-medium text-ink mb-1">Nenhuma carteira conectada</div>
-          <div className="text-xs text-muted">Conecte sua carteira MetaMask para importar transações Ethereum automaticamente</div>
-        </div>
-      ) : (
-        <div>
-          {wallets.map(w => (
-            <div key={w.id} className="flex items-center justify-between px-5 py-4 border-b border-gray-50 last:border-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-lg">🦊</div>
-                <div>
-                  <div className="text-sm font-semibold text-ink font-mono">{short(w.address)}</div>
-                  <div className="text-xs text-muted">{ETH(w.eth_balance)}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => syncWallet(w.address)}
-                  disabled={syncing === w.address}
-                  className="text-xs text-brand hover:opacity-70 disabled:opacity-40 transition-opacity"
-                >
-                  {syncing === w.address ? 'Sincronizando…' : 'Sincronizar'}
-                </button>
-                <button
-                  onClick={() => removeWallet(w.address)}
-                  disabled={removing === w.address}
-                  className="text-xs text-red-400 hover:text-red-600 disabled:opacity-40 transition-colors"
-                >
-                  {removing === w.address ? '…' : 'Remover'}
-                </button>
+      {/* MetaMask não instalado */}
+      {hasMetaMask === false && (
+        <div className="px-5 py-6 space-y-4">
+          <div className="flex items-start gap-4 p-4 rounded-xl bg-orange-50 border border-orange-100">
+            <span className="text-2xl">🦊</span>
+            <div>
+              <div className="text-sm font-bold text-orange-800 mb-1">MetaMask não encontrado</div>
+              <div className="text-xs text-orange-700 leading-relaxed">
+                Para conectar sua carteira Ethereum você precisa instalar a extensão MetaMask no seu navegador.
               </div>
             </div>
-          ))}
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-xs font-bold text-muted uppercase tracking-wider">Como instalar</div>
+
+            <a
+              href="https://metamask.io/download/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-surface transition-colors"
+            >
+              <span className="text-xl">🌐</span>
+              <div>
+                <div className="text-sm font-semibold text-ink">Desktop (Chrome / Firefox / Brave)</div>
+                <div className="text-xs text-muted">metamask.io/download → instalar extensão → recarregar esta página</div>
+              </div>
+              <span className="ml-auto text-muted text-xs">→</span>
+            </a>
+
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-gray-100">
+              <span className="text-xl">📱</span>
+              <div>
+                <div className="text-sm font-semibold text-ink">Mobile</div>
+                <div className="text-xs text-muted">Baixe o app MetaMask → abra o WalletIQ pelo browser interno do app</div>
+              </div>
+            </div>
+          </div>
         </div>
+      )}
+
+      {/* MetaMask instalado — lista de carteiras */}
+      {hasMetaMask && (
+        loading ? (
+          <div className="px-5 py-6 text-sm text-muted text-center animate-pulse">Carregando…</div>
+        ) : wallets.length === 0 ? (
+          <div className="px-5 py-8 text-center">
+            <div className="text-3xl mb-2">🦊</div>
+            <div className="text-sm font-medium text-ink mb-1">Nenhuma carteira conectada</div>
+            <div className="text-xs text-muted">Clique em "Conectar carteira" para importar transações Ethereum</div>
+          </div>
+        ) : (
+          <div>
+            {wallets.map(w => (
+              <div key={w.id} className="flex items-center justify-between px-5 py-4 border-b border-gray-50 last:border-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-lg">🦊</div>
+                  <div>
+                    <div className="text-sm font-semibold text-ink font-mono">{short(w.address)}</div>
+                    <div className="text-xs text-muted">{ETH(w.eth_balance)}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => syncWallet(w.address)}
+                    disabled={syncing === w.address}
+                    className="text-xs text-brand hover:opacity-70 disabled:opacity-40 transition-opacity"
+                  >
+                    {syncing === w.address ? 'Sincronizando…' : 'Sincronizar'}
+                  </button>
+                  <button
+                    onClick={() => removeWallet(w.address)}
+                    disabled={removing === w.address}
+                    className="text-xs text-red-400 hover:text-red-600 disabled:opacity-40 transition-colors"
+                  >
+                    {removing === w.address ? '…' : 'Remover'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
       )}
     </div>
   )
