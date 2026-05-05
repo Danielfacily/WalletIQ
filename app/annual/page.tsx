@@ -1,4 +1,4 @@
-import { createSupabaseServer } from '@/lib/supabase'
+import { createSupabaseServer } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import AppShell from '@/components/layout/AppShell'
 

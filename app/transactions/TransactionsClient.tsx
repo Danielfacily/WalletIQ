@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-browser'
 import { BRL } from '@/lib/pulse'
 
 const CATS_EXP=[{id:'food',icon:'🍔',name:'Alimentação'},{id:'housing',icon:'🏠',name:'Moradia'},{id:'transport',icon:'🚗',name:'Transporte'},{id:'health',icon:'💊',name:'Saúde'},{id:'leisure',icon:'🎮',name:'Lazer'},{id:'education',icon:'📚',name:'Educação'},{id:'subscription',icon:'📱',name:'Assinatura'},{id:'other_ex',icon:'🛒',name:'Outros'}]
