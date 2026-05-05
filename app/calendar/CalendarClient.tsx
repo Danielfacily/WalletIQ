@@ -112,7 +112,7 @@ export default function CalendarClient() {
   }
 
   const firstDOW   = data ? new Date(year, month - 1, 1).getDay() : 0
-  const selDayData = data?.days.find(d => d.day === selDay)
+  const selDayData = data?.days?.find(d => d.day === selDay)
   const s          = data?.summary
 
   // Save pct for ring
@@ -417,13 +417,13 @@ export default function CalendarClient() {
           {[
             {
               label: 'Receitas', icon: '📈',
-              count: loading ? '...' : `${(data?.days.flatMap(d=>d.txs).filter(t=>t.type==='income').length ?? 0)} transações`,
+              count: loading ? '...' : `${(data?.days?.flatMap(d=>d.txs).filter(t=>t.type==='income').length ?? 0)} transações`,
               value: loading ? '...' : `+${BRL(s?.projectedInc ?? 0)}`,
               color: '#00c896',
             },
             {
               label: 'Gastos', icon: '📉',
-              count: loading ? '...' : `${(data?.days.flatMap(d=>d.txs).filter(t=>t.type==='expense').length ?? 0)} transações`,
+              count: loading ? '...' : `${(data?.days?.flatMap(d=>d.txs).filter(t=>t.type==='expense').length ?? 0)} transações`,
               value: loading ? '...' : `−${BRL(s?.projectedExp ?? 0)}`,
               color: '#ff4d6a',
             },
@@ -462,7 +462,7 @@ export default function CalendarClient() {
               Heatmap do mês
             </div>
             <div className="flex gap-1 flex-wrap">
-              {data.days.map(d => {
+              {data?.days?.map(d => {
                 const net = d.net ?? 0
                 const intensity = Math.min(Math.abs(net) / 500, 1)
                 const bg = d.isFuture ? 'rgba(255,255,255,.03)'
