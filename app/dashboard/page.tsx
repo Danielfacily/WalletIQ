@@ -2,8 +2,6 @@ import { createSupabaseServer } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import AppShell from '@/components/layout/AppShell'
 import DashboardClient from './DashboardClient'
-import PluggyConnect from '@/components/pluggy/PluggyConnect'
-import MetaMaskConnect from '@/components/metamask/MetaMaskConnect'
 
 export const dynamic = 'force-dynamic'
 export default async function DashboardPage() {
@@ -22,8 +20,6 @@ export default async function DashboardPage() {
 
   return (
     <AppShell user={profile}>
-      <PluggyConnect />
-      <MetaMaskConnect />
       <DashboardClient
         fixed={fixed??[]}
         transactions={vars??[]}

@@ -4,11 +4,13 @@ import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 const NAV = [
-  { href:'/dashboard',   icon:'💚', label:'Saúde'     },
-  { href:'/calendar',    icon:'📆', label:'Calendário'},
-  { href:'/market',      icon:'📰', label:'Mercado'   },
-  { href:'/consultant',  icon:'🤖', label:'Consultor' },
-  { href:'/transactions',icon:'➕', label:'Lançar'    },
+  { href:'/dashboard',   icon:'💚', label:'Saúde'      },
+  { href:'/goals',       icon:'🎯', label:'Objetivos'  },
+  { href:'/calendar',    icon:'📆', label:'Calendário' },
+  { href:'/market',      icon:'📰', label:'Mercado'    },
+  { href:'/consultant',  icon:'🤖', label:'Consultor'  },
+  { href:'/transactions',icon:'➕', label:'Lançar'     },
+  { href:'/connections', icon:'🔗', label:'Conexões'   },
 ]
 
 export default function AppShell({ children, user }: { children: React.ReactNode; user?: any }) {
