@@ -1,11 +1,11 @@
 import { createSupabaseServer } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import AppShell from '@/components/layout/AppShell'
-import AnnualClient from './AnnualClient'
+import AlertsPanel from '@/components/alerts/AlertsPanel'
 
 export const dynamic = 'force-dynamic'
 
-export default async function AnnualPage() {
+export default async function AlertsPage() {
   const supabase = await createSupabaseServer()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
@@ -14,7 +14,7 @@ export default async function AnnualPage() {
 
   return (
     <AppShell user={profile}>
-      <AnnualClient />
+      <AlertsPanel />
     </AppShell>
   )
 }
