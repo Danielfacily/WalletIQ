@@ -9,17 +9,25 @@ export default async function DashboardPage() {
   const { data:{ user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const [{ data: profile }, { data: fp }, { data: fixed }, { data: vars }] = await Promise.all([
+  const now = new Date()
+  const yearStart = new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10)
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+  const today = now.toISOString().slice(0, 10)
+
+  const [{ data: profile }, { data: fp }, { data: fixed }, { data: vars }, { data: yearVars }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
-    supabase.from('financial_profiles').select('onboarding_done').eq('user_id', user.id).single(),
+    supabase.from('financial_profiles').select('*').eq('user_id', user.id).single(),
     supabase.from('fixed_budgets').select('*').eq('user_id', user.id).eq('active', true),
     supabase.from('transactions').select('*').eq('user_id', user.id)
-      .gte('date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0,10))
-      .lte('date', new Date().toISOString().slice(0,10))
+      .gte('date', monthStart)
+      .lte('date', today)
+      .order('date', { ascending: false }),
+    supabase.from('transactions').select('*').eq('user_id', user.id)
+      .gte('date', yearStart)
+      .lte('date', today)
       .order('date', { ascending: false }),
   ])
 
-  // New users who haven't completed onboarding go to profile setup
   if (!fp || !fp.onboarding_done) {
     redirect('/profile')
   }
@@ -29,7 +37,9 @@ export default async function DashboardPage() {
       <DashboardClient
         fixed={fixed??[]}
         transactions={vars??[]}
+        yearTransactions={yearVars??[]}
         profile={profile}
+        financialProfile={fp}
       />
     </AppShell>
   )

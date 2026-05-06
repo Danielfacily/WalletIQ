@@ -59,8 +59,64 @@ function MiniRing({ pct, color, size=68 }: { pct:number; color:string; size?:num
   )
 }
 
-export default function DashboardClient({ fixed, transactions, profile }: {
-  fixed: any[]; transactions: any[]; profile: any
+function HealthMeter({ score }: { score: number }) {
+  const color = score >= 70 ? '#34C759' : score >= 40 ? '#FF9500' : '#FF3B30'
+  const label = score >= 70 ? 'Saudável' : score >= 40 ? 'Atenção' : 'Crítico'
+  const icon  = score >= 70 ? '💚' : score >= 40 ? '💛' : '❤️'
+  const c = 2 * Math.PI * 44
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <svg width="104" height="60" viewBox="0 0 104 60">
+        <path d="M 8 56 A 44 44 0 0 1 96 56" fill="none" stroke="#f2f2f7" strokeWidth="10" strokeLinecap="round"/>
+        <path d="M 8 56 A 44 44 0 0 1 96 56" fill="none" stroke={color} strokeWidth="10" strokeLinecap="round"
+          strokeDasharray={`${(score / 100) * (c / 2)} ${c}`}/>
+        <text x="52" y="50" textAnchor="middle" fontSize="18" fontWeight="900" fontFamily="Figtree,sans-serif" fill="#1c1c1e">{score}</text>
+      </svg>
+      <div className="text-xs font-black" style={{ color }}>{icon} {label}</div>
+    </div>
+  )
+}
+
+function calcHealthScore(
+  income: number, expense: number,
+  fixedExpenses: number, monthlyIncome: number,
+  savingsTarget: number
+): { score: number; insights: { icon: string; text: string; color: string }[] } {
+  const insights: { icon: string; text: string; color: string }[] = []
+  let score = 0
+
+  // Savings rate (0–40 pts)
+  const savRate = income > 0 ? Math.max(0, (income - expense) / income) : 0
+  const savPts  = Math.min(40, Math.round(savRate * 200))
+  score += savPts
+  if (savRate >= 0.2) insights.push({ icon:'✅', text:`Taxa de poupança excelente (${Math.round(savRate * 100)}%)`, color:'text-green-600' })
+  else if (savRate >= 0.1) insights.push({ icon:'⚠️', text:`Poupança de ${Math.round(savRate * 100)}% — objetivo é 20%`, color:'text-orange-600' })
+  else insights.push({ icon:'🚨', text:`Poupança abaixo de 10% — revise gastos urgentemente`, color:'text-red-600' })
+
+  // Expense control (0–30 pts)
+  const expRatio = income > 0 ? expense / income : 1
+  const expPts   = Math.max(0, Math.round((1 - expRatio) * 50))
+  score += Math.min(30, expPts)
+  if (expRatio < 0.7) insights.push({ icon:'✅', text:'Gastos controlados — menos de 70% da renda', color:'text-green-600' })
+  else if (expRatio < 0.9) insights.push({ icon:'⚠️', text:`Gastos em ${Math.round(expRatio * 100)}% da renda — monitore`, color:'text-orange-600' })
+  else insights.push({ icon:'🚨', text:`Gastos em ${Math.round(expRatio * 100)}% da renda — situação de risco`, color:'text-red-600' })
+
+  // Fixed coverage vs income (0–15 pts)
+  const fixedRatio = monthlyIncome > 0 ? fixedExpenses / monthlyIncome : 0
+  if (fixedRatio <= 0.4) { score += 15; insights.push({ icon:'✅', text:'Comprometimento fixo saudável (≤ 40% da renda)', color:'text-green-600' }) }
+  else if (fixedRatio <= 0.6) { score += 8; insights.push({ icon:'⚠️', text:`Fixos comprometem ${Math.round(fixedRatio * 100)}% da renda`, color:'text-orange-600' }) }
+  else insights.push({ icon:'🚨', text:`Fixos acima de 60% da renda — risco elevado`, color:'text-red-600' })
+
+  // Savings target alignment (0–15 pts)
+  const target = savingsTarget ?? 20
+  if (savRate * 100 >= target) { score += 15; insights.push({ icon:'🎯', text:`Meta de poupança (${target}%) atingida este mês!`, color:'text-green-600' }) }
+  else if (savRate * 100 >= target * 0.5) { score += 7 }
+
+  return { score: Math.min(100, Math.max(0, score)), insights: insights.slice(0, 4) }
+}
+
+export default function DashboardClient({ fixed, transactions, yearTransactions, profile, financialProfile }: {
+  fixed: any[]; transactions: any[]; yearTransactions: any[]; profile: any; financialProfile: any
 }) {
   const [now, setNow]       = useState(new Date())
   const [period, setPeriod] = useState<Period>('month')
@@ -79,15 +135,27 @@ export default function DashboardClient({ fixed, transactions, profile }: {
   const acc = pulse.accumulated[period]
   const savePct = pulse.projected.savingsPct
 
-  // Category breakdown
+  // For year period, use full-year transactions
+  const activeTx = period === 'year' ? yearTransactions : transactions
+
+  // Category breakdown (uses period-appropriate transactions)
   const expByCat = Object.entries(
-    transactions.filter(t=>t.type==='expense').reduce((m:any,t)=>{
+    activeTx.filter(t=>t.type==='expense').reduce((m:any,t)=>{
       m[t.category]=(m[t.category]||0)+Number(t.amount); return m
     },{})
   ).sort((a:any,b:any)=>b[1]-a[1]).slice(0,6)
   const maxCat = (expByCat[0]?.[1] as number)||1
 
   const alertColor = savePct>=20?'#34C759':savePct>=10?'#FF9500':'#FF3B30'
+
+  // Health score
+  const monthlyIncome = (financialProfile?.monthly_income ?? 0) + (financialProfile?.extra_income ?? 0)
+  const fixedExp = fixed.filter(f => f.type === 'expense').reduce((s, f) => s + Number(f.amount), 0)
+  const monthIncome = pulse.accumulated.month.income
+  const monthExpense = pulse.accumulated.month.expense
+  const { score: healthScore, insights: healthInsights } = calcHealthScore(
+    monthIncome, monthExpense, fixedExp, monthlyIncome, financialProfile?.savings_target_pct ?? 20
+  )
 
   const PERIODS: {k:Period;l:string}[] = [
     {k:'day',l:'Hoje'},{k:'week',l:'Semana'},{k:'month',l:'Mês'},{k:'year',l:'Ano'}
@@ -123,6 +191,26 @@ export default function DashboardClient({ fixed, transactions, profile }: {
             {p.l}
           </button>
         ))}
+      </div>
+
+      {/* HEALTH SCORE */}
+      <div className="card p-4 mb-5 animate-fade-up">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="text-xs font-bold text-muted uppercase tracking-wider mb-1">Score de Saúde</div>
+            {healthInsights.slice(0, 2).map((ins, i) => (
+              <div key={i} className={`text-xs font-semibold mt-1 ${ins.color}`}>{ins.icon} {ins.text}</div>
+            ))}
+          </div>
+          <HealthMeter score={healthScore} />
+        </div>
+        {healthInsights.length > 2 && (
+          <div className="mt-3 pt-3 border-t border-gray-50 space-y-1">
+            {healthInsights.slice(2).map((ins, i) => (
+              <div key={i} className={`text-xs font-semibold ${ins.color}`}>{ins.icon} {ins.text}</div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* BALANCE HERO */}
@@ -304,9 +392,14 @@ export default function DashboardClient({ fixed, transactions, profile }: {
       )}
 
       {/* RECENT TRANSACTIONS */}
-      <div className="text-xl font-black text-ink tracking-tight mb-3">Recentes</div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-xl font-black text-ink tracking-tight">
+          {period === 'day' ? 'Hoje' : period === 'week' ? 'Esta semana' : period === 'month' ? 'Este mês' : 'Este ano'}
+        </div>
+        <div className="text-xs text-muted">{activeTx.length} transações</div>
+      </div>
       <div className="card animate-fade-up">
-        {transactions.slice(0,8).map((t:any)=>{
+        {activeTx.slice(0, 12).map((t:any)=>{
           const info=CATS[t.category]||{icon:'•',name:t.category,color:'#8E8E93'}
           return(
             <div key={t.id} className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0 hover:bg-surface transition-colors">
@@ -318,7 +411,6 @@ export default function DashboardClient({ fixed, transactions, profile }: {
                 <div className="text-sm font-semibold text-ink truncate">{t.name}</div>
                 <div className="text-xs text-muted mt-0.5 flex items-center gap-1.5">
                   {info.name}
-                  <span className="text-[9px] font-bold bg-brand/10 text-brand px-1.5 py-0.5 rounded">VAR</span>
                 </div>
               </div>
               <div className="text-right flex-shrink-0">
@@ -332,10 +424,17 @@ export default function DashboardClient({ fixed, transactions, profile }: {
             </div>
           )
         })}
-        {transactions.length===0&&(
+        {activeTx.length === 0 && (
           <div className="p-8 text-center text-muted text-sm">
-            Nenhuma transação este mês.<br/>
+            Nenhuma transação no período.<br/>
             <a href="/transactions" className="text-brand font-semibold">Adicionar lançamento →</a>
+          </div>
+        )}
+        {activeTx.length > 12 && (
+          <div className="px-4 py-3 text-center">
+            <a href="/transactions" className="text-xs text-brand font-semibold hover:opacity-70">
+              Ver todas as {activeTx.length} transações →
+            </a>
           </div>
         )}
       </div>

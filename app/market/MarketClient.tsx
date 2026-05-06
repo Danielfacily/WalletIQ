@@ -11,12 +11,13 @@ const FX_META: Record<string,{flag:string;label:string;desc:string}> = {
 }
 
 const NEWS = [
-  { tag:'Câmbio',   tagColor:'#007AFF', tagBg:'rgba(0,122,255,.1)',   source:'Reuters Brasil',   time:'10 min', title:'Dólar recua com CPI dos EUA abaixo do esperado', summary:'CPI americano em 3,4% alivia pressão sobre o Fed e favorece moedas emergentes como o real.', impact:'pos', impactLabel:'↑ Favorável ao BRL' },
-  { tag:'Selic',    tagColor:'#FF9500', tagBg:'rgba(255,149,0,.1)',   source:'Banco Central',    time:'2h',     title:'Copom mantém Selic em 10,50% ao ano e sinaliza cautela', summary:'Decisão unânime. Comitê cita incerteza externa e necessidade de avaliar ritmo de desinflação.', impact:'neu', impactLabel:'Neutro · aguardar' },
-  { tag:'Bolsa',    tagColor:'#34C759', tagBg:'rgba(52,199,89,.1)',   source:'B3',               time:'3h',     title:'Ibovespa sobe 1,2% liderado por bancos e commodities', summary:'Bradesco, Itaú e Vale puxaram a alta. Volume financeiro totalizou R$ 28,4 bilhões.', impact:'pos', impactLabel:'↑ Ibov +1,2%' },
-  { tag:'Tesouro',  tagColor:'#AF52DE', tagBg:'rgba(175,82,222,.1)', source:'Tesouro Nacional', time:'5h',     title:'Tesouro IPCA+ 2035 oferece 6,12% ao ano — maior em 8 meses', summary:'Com prêmio de risco elevado, Tesouro IPCA+ se torna mais atrativo para investidores de longo prazo.', impact:'pos', impactLabel:'↑ Oportunidade' },
-  { tag:'Inflação', tagColor:'#FF3B30', tagBg:'rgba(255,59,48,.1)',  source:'IBGE',             time:'1d',     title:'IPCA de março fica em 0,43%, acumulado em 12 meses sobe a 3,93%', summary:'Alimentos e habitação foram os maiores impactos. Resultado acima da mediana do mercado.', impact:'neg', impactLabel:'↓ Pressão inflacionária' },
-  { tag:'PIB',      tagColor:'#5AC8FA', tagBg:'rgba(90,200,250,.1)', source:'FGV',              time:'1d',     title:'Monitor do PIB aponta crescimento de 2,1% no 1° trimestre', summary:'Setor de serviços cresceu 2,8%. Agropecuária recuou 0,3%. Indústria avançou 1,4%.', impact:'pos', impactLabel:'↑ Economia aquecida' },
+  { tag:'Câmbio',   tagColor:'#007AFF', tagBg:'rgba(0,122,255,.1)',   source:'Reuters Brasil',   title:'Últimas notícias de câmbio e mercado de moedas',     summary:'Acompanhe as movimentações do dólar, euro e demais moedas em tempo real com análises da Reuters.', impact:'pos', impactLabel:'↑ Atualizado ao vivo', href:'https://br.reuters.com/business/finance/' },
+  { tag:'Selic',    tagColor:'#FF9500', tagBg:'rgba(255,149,0,.1)',   source:'Banco Central',    title:'Decisões do Copom e política monetária brasileira',    summary:'Todas as atas e decisões do Comitê de Política Monetária, projeções de inflação e comunicados oficiais.', impact:'neu', impactLabel:'Fonte oficial BCB', href:'https://www.bcb.gov.br/controleinflacao/copom' },
+  { tag:'Bolsa',    tagColor:'#34C759', tagBg:'rgba(52,199,89,.1)',   source:'B3',               title:'Ibovespa e mercado de capitais — dados em tempo real', summary:'Índices, ações, fundos imobiliários e ETFs. Acompanhe o desempenho completo da bolsa brasileira.', impact:'pos', impactLabel:'↑ Dados ao vivo B3', href:'https://www.b3.com.br/pt_br/market-data-e-indices/' },
+  { tag:'Tesouro',  tagColor:'#AF52DE', tagBg:'rgba(175,82,222,.1)', source:'Tesouro Nacional', title:'Taxas do Tesouro Direto — IPCA+, Prefixado e Selic',   summary:'Consulte as taxas atualizadas diariamente para todos os títulos públicos disponíveis no Tesouro Direto.', impact:'pos', impactLabel:'↑ Taxas atualizadas', href:'https://www.tesourodireto.com.br/titulos/precos-e-taxas.htm' },
+  { tag:'Inflação', tagColor:'#FF3B30', tagBg:'rgba(255,59,48,.1)',  source:'IBGE',             title:'IPCA, INPC e índices de preços — dados oficiais',      summary:'Indicadores de inflação do Instituto Brasileiro de Geografia e Estatística, atualizados mensalmente.', impact:'neg', impactLabel:'↓ Monitorar inflação', href:'https://www.ibge.gov.br/explica/inflacao.php' },
+  { tag:'Análise',  tagColor:'#5AC8FA', tagBg:'rgba(90,200,250,.1)', source:'Valor Econômico',  title:'Análise macroeconômica e mercado financeiro',          summary:'Cobertura jornalística especializada em economia, finanças corporativas, investimentos e cenário internacional.', impact:'pos', impactLabel:'Aprofundar análise', href:'https://valor.globo.com/financas/' },
+  { tag:'Renda',    tagColor:'#34C759', tagBg:'rgba(52,199,89,.1)',  source:'Infomoney',        title:'Renda fixa, ações e investimentos — educação financeira',summary:'Comparativos de rendimentos, análises de carteiras e conteúdo educacional sobre finanças pessoais.', impact:'pos', impactLabel:'↑ Aprender a investir', href:'https://www.infomoney.com.br/mercados/' },
 ]
 
 function fmtRate(pair: string, rate: number) {
@@ -179,21 +180,22 @@ export default function MarketClient() {
       <div className="text-xl font-black text-ink tracking-tight mb-3 mt-6">Economia</div>
       <div className="space-y-3">
         {NEWS.map((n, i) => (
-          <div key={i} className="card p-4 hover:shadow-md transition-shadow">
+          <a key={i} href={n.href} target="_blank" rel="noopener noreferrer"
+            className="card p-4 hover:shadow-md transition-shadow block group">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[10px] font-bold px-2 py-1 rounded-full" style={{color:n.tagColor,background:n.tagBg}}>
                 {n.tag}
               </span>
               <span className="text-xs font-semibold text-muted">{n.source}</span>
-              <span className="text-xs text-muted/60 ml-auto">há {n.time}</span>
+              <span className="text-xs text-brand/70 ml-auto font-semibold group-hover:text-brand transition-colors">↗ Acessar</span>
             </div>
-            <div className="text-base font-bold text-ink leading-snug mb-1.5">{n.title}</div>
+            <div className="text-base font-bold text-ink leading-snug mb-1.5 group-hover:text-brand transition-colors">{n.title}</div>
             <div className="text-sm text-muted leading-relaxed mb-2">{n.summary}</div>
             <div className={`inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full
               ${n.impact==='pos'?'bg-green/10 text-green':n.impact==='neg'?'bg-red/10 text-red':'bg-fill text-muted'}`}>
               {n.impactLabel}
             </div>
-          </div>
+          </a>
         ))}
       </div>
     </div>

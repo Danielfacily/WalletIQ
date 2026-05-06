@@ -45,7 +45,7 @@ const STEPS = ['Renda', 'Dívidas', 'Reserva', 'Objetivo', 'Perfil']
 
 export default function ProfileClient({ initialProfile, initialProfileRow }: { initialProfile: FinancialProfile | null; initialProfileRow?: ProfileRow | null }) {
   const router = useRouter()
-  const isOnboarding = !initialProfile?.onboarding_done
+  const isOnboarding = !initialProfile?.onboarding_done || (initialProfile?.monthly_income ?? 0) === 0
 
   const [step, setStep] = useState(isOnboarding ? (initialProfile?.onboarding_step ?? 0) : -1)
   const [saving, setSaving] = useState(false)

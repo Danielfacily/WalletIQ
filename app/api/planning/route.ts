@@ -59,18 +59,24 @@ export async function GET() {
 
   const categories = buildCategoryPlan(fixed || [], txs || [], currentPlan, totalIncome)
 
+  const actuals = {
+    needs:   needsSpent,
+    wants:   wantsSpent,
+    savings: Math.max(0, totalIncome - needsSpent - wantsSpent),
+    total:   totalFixed + totalVar,
+  }
+
+  // Suggest methodologies based on profile
+  const methodologies = suggestMethodologies(fp, actuals.needs + actuals.wants, totalIncome)
+
   return NextResponse.json({
     plan: currentPlan,
-    actuals: {
-      needs:   needsSpent,
-      wants:   wantsSpent,
-      savings: Math.max(0, totalIncome - needsSpent - wantsSpent),
-      total:   totalFixed + totalVar,
-    },
+    actuals,
     pcts: { needs: needsPct, wants: wantsPct, savings: savingsPct },
     categories,
     total_income: totalIncome,
     has_profile: !!fp,
+    methodologies,
   })
 }
 
@@ -100,6 +106,65 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ plan: data })
+}
+
+function suggestMethodologies(fp: any, totalSpent: number, income: number) {
+  const savPct = fp?.savings_target_pct ?? 20
+  const hasDebt = fp?.has_debt ?? false
+  const totalDebt = fp?.total_debt ?? 0
+
+  const methods = [
+    {
+      id: '50-30-20',
+      name: '50/30/20',
+      desc: 'Clássico: 50% necessidades, 30% qualidade de vida, 20% poupança',
+      icon: '⚖️',
+      recommended: !hasDebt && savPct >= 15 && savPct <= 25,
+      splits: { needs: 50, wants: 30, savings: 20 },
+    },
+    {
+      id: '70-20-10',
+      name: '70/20/10',
+      desc: 'Conservador: 70% gastos, 20% poupança, 10% dívidas/doações',
+      icon: '🛡️',
+      recommended: income > 0 && (totalSpent / income) > 0.65,
+      splits: { needs: 70, wants: 10, savings: 20 },
+    },
+    {
+      id: 'snowball',
+      name: 'Bola de Neve',
+      desc: 'Para dívidas: pague as menores primeiro, ganhe momentum',
+      icon: '❄️',
+      recommended: hasDebt && totalDebt > 0,
+      splits: { needs: 55, wants: 10, savings: 35 },
+    },
+    {
+      id: 'avalanche',
+      name: 'Avalanche',
+      desc: 'Para dívidas: pague as de maior juros primeiro, economize mais',
+      icon: '🏔️',
+      recommended: hasDebt && totalDebt > income * 3,
+      splits: { needs: 55, wants: 10, savings: 35 },
+    },
+    {
+      id: 'aggressive',
+      name: 'Acumulação Agressiva',
+      desc: 'Alta poupança: 40%+ para quem quer independência financeira rápida',
+      icon: '🚀',
+      recommended: savPct >= 30 && !hasDebt,
+      splits: { needs: 45, wants: 15, savings: 40 },
+    },
+    {
+      id: 'envelope',
+      name: 'Método Envelope',
+      desc: 'Orçamento rigoroso por categoria, sem extrapolar nenhum limite',
+      icon: '📬',
+      recommended: totalSpent > income * 0.9,
+      splits: { needs: 50, wants: 25, savings: 25 },
+    },
+  ]
+
+  return methods
 }
 
 function buildCategoryPlan(fixed: any[], txs: any[], plan: any, income: number) {

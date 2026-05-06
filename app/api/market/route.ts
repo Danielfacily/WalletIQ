@@ -4,14 +4,13 @@ let cache: any = null
 let cachedAt   = 0
 const TTL      = 5 * 60 * 1000
 
-// Fallback rates (updated periodically as static baseline)
 const FALLBACK_RATES = [
-  { pair:'USD/BRL', code:'USD', name:'Dólar Americano/Real Brasileiro', rate:5.14, high:5.18, low:5.10, change:0.23, updated:'2025-05-06 10:00:00' },
-  { pair:'EUR/BRL', code:'EUR', name:'Euro/Real Brasileiro',            rate:5.72, high:5.76, low:5.68, change:-0.12, updated:'2025-05-06 10:00:00' },
-  { pair:'GBP/BRL', code:'GBP', name:'Libra Esterlina/Real Brasileiro', rate:6.71, high:6.75, low:6.67, change:0.08,  updated:'2025-05-06 10:00:00' },
-  { pair:'BTC/BRL', code:'BTC', name:'Bitcoin/Real Brasileiro',         rate:469580, high:475000, low:462000, change:1.82, updated:'2025-05-06 10:00:00' },
-  { pair:'ARS/BRL', code:'ARS', name:'Peso Argentino/Real Brasileiro',  rate:0.0054, high:0.0055, low:0.0053, change:-0.37, updated:'2025-05-06 10:00:00' },
-  { pair:'CNY/BRL', code:'CNY', name:'Yuan Chinês/Real Brasileiro',     rate:0.71, high:0.72, low:0.70, change:0.14, updated:'2025-05-06 10:00:00' },
+  { pair:'USD/BRL', code:'USD', name:'Dólar Americano/Real Brasileiro', rate:5.74, high:5.78, low:5.70, change:0.18, updated:'2026-05-06 10:00:00' },
+  { pair:'EUR/BRL', code:'EUR', name:'Euro/Real Brasileiro',            rate:6.32, high:6.36, low:6.28, change:-0.10, updated:'2026-05-06 10:00:00' },
+  { pair:'GBP/BRL', code:'GBP', name:'Libra Esterlina/Real Brasileiro', rate:7.41, high:7.45, low:7.37, change:0.07, updated:'2026-05-06 10:00:00' },
+  { pair:'BTC/BRL', code:'BTC', name:'Bitcoin/Real Brasileiro',         rate:502000, high:515000, low:495000, change:1.45, updated:'2026-05-06 10:00:00' },
+  { pair:'ARS/BRL', code:'ARS', name:'Peso Argentino/Real Brasileiro',  rate:0.0052, high:0.0053, low:0.0051, change:-0.28, updated:'2026-05-06 10:00:00' },
+  { pair:'CNY/BRL', code:'CNY', name:'Yuan Chinês/Real Brasileiro',     rate:0.79, high:0.80, low:0.78, change:0.12, updated:'2026-05-06 10:00:00' },
 ]
 
 export async function GET() {

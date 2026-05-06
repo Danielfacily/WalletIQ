@@ -66,6 +66,10 @@ export default function GoalsClient() {
   const [saving,      setSaving]      = useState(false)
   const [error,       setError]       = useState<string | null>(null)
   const [availableMonthly, setAvailableMonthly] = useState(0)
+  const [totalIncome, setTotalIncome] = useState(0)
+  const [hasDebt, setHasDebt]         = useState(false)
+  const [consulting,   setConsulting]  = useState(false)
+  const [consultation, setConsultation] = useState<any | null>(null)
 
   const [form, setForm] = useState({
     name: '', emoji: '🎯', target_amount: '', deadline: '', category: 'outro', priority: 1
@@ -81,6 +85,7 @@ export default function GoalsClient() {
     setGoals(goalsJson.goals ?? [])
     setSuggestions(suggestJson.suggestions ?? [])
     setAvailableMonthly(suggestJson.available_monthly ?? 0)
+    setTotalIncome(suggestJson.total_income ?? 0)
     setLoading(false)
   }, [])
 
@@ -102,9 +107,31 @@ export default function GoalsClient() {
     const json = await res.json()
     if (json.error) { setError(json.error); setSaving(false); return }
     setShowAdd(false)
+    setConsultation(null)
     setForm({ name: '', emoji: '🎯', target_amount: '', deadline: '', category: 'outro', priority: 1 })
     setSaving(false)
     await fetchGoals()
+  }
+
+  const consultGoal = async () => {
+    if (!form.name || !form.target_amount) { setError('Preencha nome e valor para consultar'); return }
+    setConsulting(true); setError(null); setConsultation(null)
+    const res = await fetch('/api/goals/consult', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        goal_name: form.name,
+        goal_category: form.category,
+        target_amount: Number(form.target_amount),
+        deadline: form.deadline || null,
+        available_monthly: availableMonthly,
+        monthly_income: totalIncome,
+        has_debt: hasDebt,
+      }),
+    })
+    const json = await res.json()
+    setConsultation(json)
+    setConsulting(false)
   }
 
   const addDeposit = async () => {
@@ -409,13 +436,100 @@ export default function GoalsClient() {
             {/* Smart suggestion preview */}
             {suggestedMonthly > 0 && (
               <div className="bg-brand/8 rounded-xl p-3">
-                <div className="text-xs font-bold text-brand mb-1">Sugestão inteligente</div>
+                <div className="text-xs font-bold text-brand mb-1">Sugestão rápida</div>
                 <div className="text-sm text-brand">
                   Guarde <span className="font-black">{BRL(suggestedMonthly)}/mês</span> por {monthsUntilDeadline} meses para alcançar essa meta.
                 </div>
                 {availableMonthly > 0 && suggestedMonthly > availableMonthly * 0.5 && (
                   <div className="text-xs text-orange-600 mt-1">
                     ⚠️ Isso representa mais de 50% do seu saldo disponível. Considere estender o prazo.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* AI Consultant */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="text-xs text-muted">Possui dívidas?</div>
+                <button onClick={() => setHasDebt(h => !h)}
+                  className={`text-xs font-semibold px-3 py-1 rounded-full border-2 transition-all
+                    ${hasDebt ? 'border-orange-400 bg-orange-50 text-orange-600' : 'border-gray-200 text-muted'}`}>
+                  {hasDebt ? 'Sim' : 'Não'}
+                </button>
+              </div>
+              <button
+                onClick={consultGoal}
+                disabled={consulting || !form.name || !form.target_amount}
+                className="w-full py-2.5 rounded-xl border-2 border-brand/30 bg-brand/5 text-brand text-sm font-semibold
+                  hover:bg-brand/10 disabled:opacity-40 transition-all flex items-center justify-center gap-2"
+              >
+                {consulting ? (
+                  <><span className="animate-spin text-base">⟳</span> Consultando CFO…</>
+                ) : (
+                  <><span>🤖</span> Consultar CFO Automático</>
+                )}
+              </button>
+            </div>
+
+            {/* Consultation result */}
+            {consultation && (
+              <div className="bg-ink rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">🤖</span>
+                  <div className="text-sm font-black text-white">Análise do CFO</div>
+                  {consultation.feasibility_pct !== undefined && (
+                    <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full
+                      ${consultation.feasibility_pct <= 60 ? 'bg-green-500/20 text-green-400' : consultation.feasibility_pct <= 100 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
+                      {consultation.feasibility_pct}% do disponível
+                    </span>
+                  )}
+                </div>
+
+                {consultation.consultation?.viability && (
+                  <p className="text-xs text-white/70 leading-relaxed">{consultation.consultation.viability}</p>
+                )}
+
+                {consultation.consultation?.strategy?.length > 0 && (
+                  <div>
+                    <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Estratégia</div>
+                    <div className="space-y-2">
+                      {consultation.consultation.strategy.map((step: string, i: number) => (
+                        <div key={i} className="flex gap-2 items-start">
+                          <span className="text-brand font-black text-xs flex-shrink-0">{i + 1}.</span>
+                          <span className="text-xs text-white/65 leading-relaxed">{step}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {consultation.consultation?.tips?.length > 0 && (
+                  <div>
+                    <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Dicas</div>
+                    {consultation.consultation.tips.map((tip: string, i: number) => (
+                      <div key={i} className="flex gap-2 items-start mb-1">
+                        <span className="text-yellow-400 text-xs flex-shrink-0">💡</span>
+                        <span className="text-xs text-white/65">{tip}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {consultation.consultation?.alerts?.length > 0 && (
+                  <div className="bg-red-500/10 rounded-xl p-2.5">
+                    {consultation.consultation.alerts.map((alert: string, i: number) => (
+                      <div key={i} className="flex gap-2 items-start">
+                        <span className="text-red-400 text-xs">⚠️</span>
+                        <span className="text-xs text-red-300">{alert}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {consultation.consultation?.adjustment && (
+                  <div className="bg-brand/15 rounded-xl p-2.5">
+                    <span className="text-xs text-brand/90 leading-relaxed">{consultation.consultation.adjustment}</span>
                   </div>
                 )}
               </div>
