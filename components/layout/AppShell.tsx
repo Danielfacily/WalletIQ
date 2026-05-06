@@ -14,6 +14,7 @@ const NAV_PRIMARY = [
 ]
 
 const NAV_SECONDARY = [
+  { href:'/annual',      icon:'📅', label:'Anual'      },
   { href:'/calendar',    icon:'📆', label:'Calendário' },
   { href:'/market',      icon:'📰', label:'Mercado'    },
   { href:'/consultant',  icon:'💬', label:'Consultor'  },

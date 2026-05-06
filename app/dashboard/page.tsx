@@ -9,14 +9,20 @@ export default async function DashboardPage() {
   const { data:{ user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const [{ data: profile }, { data: fixed }, { data: vars }] = await Promise.all([
+  const [{ data: profile }, { data: fp }, { data: fixed }, { data: vars }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
+    supabase.from('financial_profiles').select('onboarding_done').eq('user_id', user.id).single(),
     supabase.from('fixed_budgets').select('*').eq('user_id', user.id).eq('active', true),
     supabase.from('transactions').select('*').eq('user_id', user.id)
       .gte('date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0,10))
       .lte('date', new Date().toISOString().slice(0,10))
       .order('date', { ascending: false }),
   ])
+
+  // New users who haven't completed onboarding go to profile setup
+  if (!fp || !fp.onboarding_done) {
+    redirect('/profile')
+  }
 
   return (
     <AppShell user={profile}>
