@@ -3,6 +3,10 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BRL } from '@/lib/pulse'
 
+interface ProfileRow {
+  phone?: string | null
+}
+
 interface FinancialProfile {
   monthly_income: number
   extra_income: number
@@ -39,12 +43,15 @@ const GOALS = [
 
 const STEPS = ['Renda', 'Dívidas', 'Reserva', 'Objetivo', 'Perfil']
 
-export default function ProfileClient({ initialProfile }: { initialProfile: FinancialProfile | null }) {
+export default function ProfileClient({ initialProfile, initialProfileRow }: { initialProfile: FinancialProfile | null; initialProfileRow?: ProfileRow | null }) {
   const router = useRouter()
   const isOnboarding = !initialProfile?.onboarding_done
 
   const [step, setStep] = useState(isOnboarding ? (initialProfile?.onboarding_step ?? 0) : -1)
   const [saving, setSaving] = useState(false)
+  const [phone, setPhone] = useState(initialProfileRow?.phone ?? '')
+  const [phoneSaving, setPhoneSaving] = useState(false)
+  const [phoneSaved, setPhoneSaved] = useState(false)
   const [form, setForm] = useState<Partial<FinancialProfile>>({
     monthly_income:      initialProfile?.monthly_income      ?? 0,
     extra_income:        initialProfile?.extra_income        ?? 0,
@@ -57,6 +64,18 @@ export default function ProfileClient({ initialProfile }: { initialProfile: Fina
   })
 
   const profile = initialProfile
+
+  const savePhone = async () => {
+    setPhoneSaving(true)
+    await fetch('/api/profile/phone', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    })
+    setPhoneSaving(false)
+    setPhoneSaved(true)
+    setTimeout(() => setPhoneSaved(false), 3000)
+  }
 
   const save = async (extraData?: Partial<FinancialProfile>) => {
     setSaving(true)
@@ -385,7 +404,7 @@ export default function ProfileClient({ initialProfile }: { initialProfile: Fina
       )}
 
       {/* Recommendations based on profile */}
-      <div className="card p-5">
+      <div className="card p-5 mb-4">
         <div className="text-xs font-bold text-muted uppercase tracking-wider mb-3">Recomendações para seu perfil</div>
         <div className="space-y-3">
           {getRecommendations(profile).map((rec, i) => (
@@ -397,6 +416,46 @@ export default function ProfileClient({ initialProfile }: { initialProfile: Fina
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* WhatsApp connection */}
+      <div className="card p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xl">💬</span>
+          <div className="text-xs font-bold text-muted uppercase tracking-wider">WhatsApp</div>
+        </div>
+        <p className="text-xs text-muted mb-4">
+          Conecte seu WhatsApp para registrar gastos por mensagem, consultar saldo e receber alertas críticos direto no celular.
+        </p>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-semibold text-muted">Número (com DDD, sem +)</label>
+            <input
+              type="tel"
+              className="input mt-1"
+              placeholder="5511999999999"
+              value={phone}
+              onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
+            />
+            <div className="text-[10px] text-muted mt-1">Formato: código do país + DDD + número. Ex: 5511999999999</div>
+          </div>
+          <button
+            onClick={savePhone}
+            disabled={phoneSaving || !phone}
+            className="w-full bg-green-500 text-white font-bold py-3 rounded-xl text-sm hover:opacity-90 disabled:opacity-40 transition-opacity"
+          >
+            {phoneSaving ? 'Salvando…' : phoneSaved ? '✓ Salvo!' : 'Vincular WhatsApp'}
+          </button>
+          {phone && (
+            <div className="bg-green-50 rounded-xl p-3 text-xs text-green-700 space-y-1">
+              <div className="font-semibold">Após vincular, você pode:</div>
+              <div>• Enviar <em>gastei 50 no almoço</em> para registrar</div>
+              <div>• Enviar <em>saldo</em> para consultar o mês</div>
+              <div>• Enviar <em>resumo</em> para ver gastos por categoria</div>
+              <div>• Receber alertas automáticos de orçamento</div>
+            </div>
+          )}
         </div>
       </div>
     </div>

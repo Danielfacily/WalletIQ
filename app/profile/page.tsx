@@ -17,7 +17,7 @@ export default async function ProfilePage() {
 
   return (
     <AppShell user={profile}>
-      <ProfileClient initialProfile={financialProfile ?? null} />
+      <ProfileClient initialProfile={financialProfile ?? null} initialProfileRow={profile ?? null} />
     </AppShell>
   )
 }

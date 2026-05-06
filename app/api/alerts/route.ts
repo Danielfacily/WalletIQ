@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServer } from '@/lib/supabase-server'
 import { generateAlerts } from '@/lib/alerts-engine'
+import { waSendText } from '@/lib/whatsapp'
 
 export async function GET() {
   const supabase = await createSupabaseServer()
@@ -76,6 +77,17 @@ export async function POST() {
   )
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Send critical alerts via WhatsApp if user has phone on file
+  const critical = generated.filter(a => a.severity === 'critical')
+  if (critical.length > 0) {
+    const { data: profile } = await supabase.from('profiles').select('phone').eq('id', user.id).single()
+    if (profile?.phone) {
+      const msgs = critical.map(a => `🚨 *${a.title}*\n${a.message}`).join('\n\n')
+      await waSendText(profile.phone, `*Alerta WalletIQ*\n\n${msgs}`)
+    }
+  }
+
   return NextResponse.json({ inserted: generated.length })
 }
 
