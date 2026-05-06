@@ -49,9 +49,11 @@ export default function ProfileClient({ initialProfile, initialProfileRow }: { i
 
   const [step, setStep] = useState(isOnboarding ? (initialProfile?.onboarding_step ?? 0) : -1)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [phone, setPhone] = useState(initialProfileRow?.phone ?? '')
   const [phoneSaving, setPhoneSaving] = useState(false)
   const [phoneSaved, setPhoneSaved] = useState(false)
+  const [savedProfile, setSavedProfile] = useState<FinancialProfile | null>(initialProfile)
   const [form, setForm] = useState<Partial<FinancialProfile>>({
     monthly_income:      initialProfile?.monthly_income      ?? 0,
     extra_income:        initialProfile?.extra_income        ?? 0,
@@ -61,9 +63,8 @@ export default function ProfileClient({ initialProfile, initialProfileRow }: { i
     total_debt:          initialProfile?.total_debt          ?? 0,
     main_goal:           initialProfile?.main_goal           ?? null,
     savings_target_pct:  initialProfile?.savings_target_pct  ?? 20,
+    onboarding_done:     initialProfile?.onboarding_done     ?? false,
   })
-
-  const profile = initialProfile
 
   const savePhone = async () => {
     setPhoneSaving(true)
@@ -77,26 +78,40 @@ export default function ProfileClient({ initialProfile, initialProfileRow }: { i
     setTimeout(() => setPhoneSaved(false), 3000)
   }
 
-  const save = async (extraData?: Partial<FinancialProfile>) => {
+  const save = async (extraData?: Partial<FinancialProfile>): Promise<boolean> => {
     setSaving(true)
+    setSaveError(null)
     const payload = { ...form, ...extraData }
-    await fetch('/api/profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    setSaving(false)
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json()
+      if (!res.ok || json.error) {
+        setSaveError(json.error ?? 'Erro ao salvar. Tente novamente.')
+        setSaving(false)
+        return false
+      }
+      if (json.profile) setSavedProfile(json.profile)
+      setSaving(false)
+      return true
+    } catch {
+      setSaveError('Sem conexão. Verifique sua internet e tente novamente.')
+      setSaving(false)
+      return false
+    }
   }
 
   const nextStep = async () => {
     const nextS = step + 1
     if (nextS >= STEPS.length) {
-      await save({ onboarding_done: true, onboarding_step: STEPS.length })
-      router.refresh()
-      setStep(-1)
+      const ok = await save({ onboarding_done: true, onboarding_step: STEPS.length })
+      if (ok) router.push('/dashboard')
     } else {
-      await save({ onboarding_step: nextS })
-      setStep(nextS)
+      const ok = await save({ onboarding_step: nextS })
+      if (ok) setStep(nextS)
     }
   }
 
@@ -313,10 +328,16 @@ export default function ProfileClient({ initialProfile, initialProfileRow }: { i
               </>
             )}
 
+            {saveError && (
+              <div className="mt-4 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-700 font-semibold">
+                ⚠️ {saveError}
+              </div>
+            )}
+
             <button
               onClick={nextStep}
               disabled={saving || (step === 0 && !form.monthly_income)}
-              className="w-full mt-6 bg-brand text-white font-bold py-4 rounded-2xl text-base hover:opacity-90 disabled:opacity-40 transition-opacity"
+              className="w-full mt-4 bg-brand text-white font-bold py-4 rounded-2xl text-base hover:opacity-90 disabled:opacity-40 transition-opacity"
             >
               {saving ? 'Salvando…' : step === STEPS.length - 1 ? 'Finalizar perfil ✓' : 'Próximo →'}
             </button>
@@ -333,6 +354,7 @@ export default function ProfileClient({ initialProfile, initialProfileRow }: { i
   }
 
   // Profile view (after onboarding)
+  const profile = savedProfile
   const profileInfo = PROFILE_LABELS[profile?.profile_type ?? 'undefined'] ?? PROFILE_LABELS.undefined
   const totalIncomeProfile = (profile?.monthly_income ?? 0) + (profile?.extra_income ?? 0)
 
