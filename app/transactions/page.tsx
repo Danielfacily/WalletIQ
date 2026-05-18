@@ -3,8 +3,9 @@ import { redirect } from 'next/navigation'
 import AppShell from '@/components/layout/AppShell'
 import TransactionsClient from './TransactionsClient'
 
+export const dynamic = 'force-dynamic'
 export default async function TransactionsPage() {
-  const supabase = createSupabaseServer()
+  const supabase = await createSupabaseServer()
   const { data:{ user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
   const [{ data:profile },{ data:fixed },{ data:txs }] = await Promise.all([

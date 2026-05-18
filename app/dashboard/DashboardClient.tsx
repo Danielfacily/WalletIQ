@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { calcPulse, BRL, BRLK, MONO4, fmtCountdown } from '@/lib/pulse'
+import AlertsPanel from '@/components/alerts/AlertsPanel'
 
 type Period = 'day'|'week'|'month'|'year'
 
@@ -109,6 +110,9 @@ export default function DashboardClient({ fixed, transactions, profile }: {
           <div className="font-mono text-sm text-muted">{now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</div>
         </div>
       </div>
+
+      {/* SMART ALERTS (compact) */}
+      <AlertsPanel compact />
 
       {/* PERIOD SEGMENT */}
       <div className="flex bg-fill rounded-xl p-1 mb-5">
